@@ -1,7 +1,3 @@
----
-title: report in Hackmd
-
----
 
 # Soc Lab3
 *Github: https://github.com/constant619/EESM6000C-Lab3*
