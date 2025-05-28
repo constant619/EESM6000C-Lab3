@@ -1,0 +1,41 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2022.1 (lin64) Build 3526262 Mon Apr 18 15:47:01 MDT 2022
+| Date         : Sun Feb  9 13:12:27 2025
+| Host         : ubuntu2004 running 64-bit Ubuntu 20.04.4 LTS
+| Command      : report_timing -file timing_report.rpt
+| Design       : binary2bcd_double_dabble
+| Device       : 7z020-clg400
+| Speed File   : -1  PRODUCTION 1.12 2019-11-22
+------------------------------------------------------------------------------------
+
+Timing Report
+
+Slack:                    inf
+  Source:                 in_binary[3]
+                            (input port)
+  Destination:            packed_bcd[3]
+                            (output port)
+  Path Group:             (none)
+  Path Type:              Max at Slow Process Corner
+  Data Path Delay:        6.404ns  (logic 3.878ns (60.562%)  route 2.525ns (39.438%))
+  Logic Levels:           4  (IBUF=1 LUT5=2 OBUF=1)
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                                                      0.000     0.000 r  in_binary[3] (IN)
+                         net (fo=0)                   0.000     0.000    in_binary[3]
+                         IBUF (Prop_ibuf_I_O)         0.972     0.972 r  in_binary_IBUF[3]_inst/O
+                         net (fo=4, unplaced)         0.800     1.771    in_binary_IBUF[3]
+                         LUT5 (Prop_lut5_I4_O)        0.124     1.895 r  packed_bcd_OBUF[4]_inst_i_2/O
+                         net (fo=4, unplaced)         0.926     2.821    packed_bcd_OBUF[4]_inst_i_2_n_0
+                         LUT5 (Prop_lut5_I0_O)        0.148     2.969 r  packed_bcd_OBUF[3]_inst_i_1/O
+                         net (fo=2, unplaced)         0.800     3.769    unpacked_bcd_OBUF[3]
+                         OBUF (Prop_obuf_I_O)         2.634     6.404 r  packed_bcd_OBUF[3]_inst/O
+                         net (fo=0)                   0.000     6.404    packed_bcd[3]
+                                                                      r  packed_bcd[3] (OUT)
+  -------------------------------------------------------------------    -------------------
+
+
+
+
