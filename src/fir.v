@@ -172,7 +172,7 @@ always@(*) begin
         end
 
         default: 
-            ns= idle; 
+          ns= idle; 
     endcase
 end
 
