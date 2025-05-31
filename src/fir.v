@@ -1,4 +1,5 @@
 `timescale 1ns / 1ps
+
 module fir 
 #(  parameter pADDR_WIDTH = 12,
     parameter pDATA_WIDTH = 32,
@@ -52,8 +53,8 @@ parameter idle        = 4'd0 ;
 parameter input_1  = 4'd1 ; // addr
 parameter input_2  = 4'd2 ; // write
 
-parameter calculte_1    = 4'd3 ; 
-parameter calculte_2    = 4'd4 ; 
+parameter cal_1    = 4'd3 ; 
+parameter cal_2    = 4'd4 ; 
 parameter last_multi   = 4'd5 ;
 parameter accumulate   = 4'd6 ;
 parameter out_state  = 4'd7 ;
@@ -107,7 +108,7 @@ always@(posedge axis_clk or negedge axis_rst_n) begin
 		cs <= ns;
 end
 
-//ns
+
 always@(*) begin
     case(cs)
         idle: ns = input_1;
@@ -116,7 +117,7 @@ always@(*) begin
         // addr
         begin
           if(awaddr == 12'h000 && wdata == 32'd1)
-            ns = calculte_1 ;
+            ns = cal_1 ;
           else if(read_done)
             ns = input_1 ;
           else if(awvalid)
@@ -132,27 +133,27 @@ always@(*) begin
                 ns = input_1;
         
           if(awaddr == 12'h000 && wdata == 32'd1)
-            ns = calculte_1;
+            ns = cal_1;
           else if(wvalid)
             ns = input_1;
           else  
             ns = input_2;
         end
 
-        calculte_1 : //2
+        cal_1 : //2
         begin
           if(out_count == 10)
-            ns = calculte_2;
+            ns = cal_2;
           else 
-            ns = calculte_1;
+            ns = cal_1;
         end
 
-        calculte_2 : //3
+        cal_2 : //3
         begin
           if(X_count == ptr )
             ns = last_multi;
           else 
-            ns = calculte_2;
+            ns = cal_2;
         end
 
         last_multi:      
@@ -167,7 +168,7 @@ always@(*) begin
 
         out_state :
         begin
-          ns = calculte_2;
+          ns = cal_2;
         end
 
         default: 
@@ -181,7 +182,7 @@ assign tap_EN = 1'b1;
 assign tap_Di = tap_Di_reg;
 
 always @(*)begin
-  if(cs == calculte_2) 
+  if(cs == cal_2 )
     tap_A = {coef_ptr,2'b0};
   else 
     tap_A = (!work)? tap_A_reg: araddr -12'h020;
@@ -191,7 +192,7 @@ assign tap_WE = tap_WE_reg;
 always @(posedge axis_clk or negedge axis_rst_n) begin
   if(~axis_rst_n) 
     work <= 0;
-  else if(ns == calculte_1 || ns == calculte_2)
+  else if(ns == cal_1 || ns == cal_2)
     work <= 0;
   else if(rready)
     work <= 1;
@@ -242,8 +243,8 @@ always @(posedge axis_clk or negedge axis_rst_n) begin
     else if (addr_reg == 12'h040) tap_A_reg <= 12'h020;
     else if (addr_reg == 12'h044) tap_A_reg <= 12'h024;
     else tap_A_reg <= 12'h028;
-  else if(ns == calculte_1 || ns == calculte_2)
-    case(coef_ptr)  // modify
+  else if(ns == cal_1 || ns == cal_2)
+    case(coef_ptr)  
       0 : tap_A_reg = 12'h000;
       1 : tap_A_reg = 12'h004;
       2 : tap_A_reg = 12'h008;
@@ -262,15 +263,15 @@ end
 always @(posedge axis_clk or negedge axis_rst_n) begin
   if(~axis_rst_n)
     coef_ptr <= 0;
-  else if(ns == calculte_1 && coef_ptr != 0)
+  else if(ns == cal_1 && coef_ptr != 0)
     coef_ptr <= coef_ptr -1 ;
-  else if( ns == calculte_1)
+  else if( ns == cal_1)
     coef_ptr <= X_count ; 
-  else if(cs == out_state && ns == calculte_2)
+  else if(cs == out_state && ns == cal_2)
     coef_ptr <= 10;
-  else if(cs == calculte_1 && ns == calculte_2)
+  else if(cs == cal_1 && ns == cal_2)
     coef_ptr <= X_count ; 
-  else if(ns == calculte_2 && coef_ptr != 0)
+  else if(ns == cal_2 && coef_ptr != 0)
     coef_ptr <= coef_ptr -1 ;
   else 
     coef_ptr <= coef_ptr;
@@ -285,12 +286,12 @@ always @(posedge axis_clk or negedge axis_rst_n) begin
   if(~axis_rst_n)
     X_count <= 0;
     
-  else if(cs == calculte_2)
+  else if(cs == cal_2)
     if(X_count == ptr)
       X_count <= (X_count ==10)?0: X_count + 1 ;
     else 
        X_count  <=  X_count  ;  
-  else if(cs == calculte_1 && ptr == X_count)
+  else if(cs == cal_1 && ptr == X_count)
     X_count <= X_count + 1 ;
   else 
     X_count <= X_count;
@@ -308,7 +309,7 @@ always @(posedge axis_clk or negedge axis_rst_n) begin
     addr_reg <= 0;
   else if(ns==input_2)
     addr_reg <= awaddr;
-  else if(ns == calculte_1)  //modify
+  else if(ns == cal_1)  //modify
     addr_reg <= X_count;
   else 
     addr_reg <= addr_reg;
@@ -354,7 +355,7 @@ always@(*)begin
   if(cs == accumulate)
     data_A = {ptr,2'b0};
   else 
-    data_A = (cs == calculte_2) ? {ptr,2'b0} : data_A_reg;
+    data_A = (cs == cal_2) ? {ptr,2'b0} : data_A_reg;
 end
 
 assign data_EN = 1'b1;
@@ -367,7 +368,7 @@ always @(posedge axis_clk or negedge axis_rst_n) begin
     data_WE_reg <= 4'b1111;
   else if ((cs == input_1 || cs == input_2)& (stream_count_ss <11)) 
     data_WE_reg <= 4'b1111;
-  else if(cs == calculte_1 && ss_tready == 1) // rotate
+  else if(cs == cal_1 && ss_tready == 1) // rotate
     data_WE_reg <= 4'b1111;
   else 
     data_WE_reg <= 4'b0000;
@@ -378,12 +379,12 @@ always @(posedge axis_clk or negedge axis_rst_n) begin
     ptr <= 0 ;
   else if(cs == out_state)
     ptr <= initial_ptr;
-  else if(cs == calculte_1 )
-    if(ns == calculte_2)
+  else if(cs == cal_1 )
+    if(ns == cal_2)
       ptr <= 0;
     else 
       ptr <= (X_count == ptr)? 0 : ptr_plus ;
-  else if(cs == calculte_2)
+  else if(cs == cal_2)
     ptr <= (X_count == ptr)? initial_ptr : ptr_plus ;
   else if(cs == last_multi)
     ptr <= ptr; 
@@ -396,17 +397,17 @@ end
 always @(posedge axis_clk or negedge axis_rst_n) begin
   if(~axis_rst_n) 
     initial_ptr <= 0;
-  else if(cs == calculte_1)
-    initial_ptr <=(ns == calculte_2)?0:initial_ptr;
-  else if (cs == calculte_2)
+  else if(cs == cal_1)
+    initial_ptr <=(ns == cal_2)?0:initial_ptr;
+  else if (cs == cal_2)
     if(ns == last_multi)
    initial_ptr <= (initial_ptr == 10)? 0 : initial_ptr +1 ; 
    else 
    initial_ptr <= initial_ptr;
   else 
    initial_ptr <= initial_ptr; 
-  // else if(ns == calculte_2)
-  //   if(cs == calculte_1)
+  // else if(ns == cal_2)
+  //   if(cs == cal_1)
   //     initial_ptr<=0;
   //   else
   //     if(X_count == ptr)
@@ -465,15 +466,15 @@ end
 always @(posedge axis_clk or negedge axis_rst_n) begin
   if(~axis_rst_n) 
     Xn <= 0;
-  else if(cs == calculte_1 || cs == calculte_2)
+  else if(cs == cal_1 || cs == cal_2)
     Xn <= data_Do;
   else 
     Xn <= Xn;
 end
 always @(*)begin
-  if(cs== calculte_1 )
+  if(cs== cal_1 )
     mult_a = Xn;
-  else if(cs== calculte_2)
+  else if(cs== cal_2)
     mult_a = data_Do;
   else 
     mult_a = 0;
@@ -484,14 +485,14 @@ always @(posedge axis_clk or negedge axis_rst_n) begin // single multi result
     multi_result <=0 ;
   else if(mult_EN_2)
     multi_result <=0 ;   
-  else if(cs ==  calculte_1 || cs ==  calculte_2 || cs == last_multi)
+  else if(cs ==  cal_1 || cs ==  cal_2 || cs == last_multi)
     multi_result <= mult_a * tap_Do;
   else 
     multi_result <= multi_result;
 end
 
 assign mult_EN =  (tap_A == 12'h000) ? 1:0;
-assign mult_EN_2 = (tap_A == 12'h028 && cs == calculte_2) ? 1:0;
+assign mult_EN_2 = (tap_A == 12'h028 && cs == cal_2) ? 1:0;
 
 always @(posedge axis_clk or negedge axis_rst_n) begin
   if(~axis_rst_n)
@@ -505,7 +506,7 @@ end
 always @(posedge axis_clk or negedge axis_rst_n) begin
   if(~axis_rst_n)
     out_EN_t <= 0;
-  else  if((cs ==  calculte_1 ))
+  else  if((cs ==  cal_1 ))
     out_EN_t <=  out_EN;
   else 
     out_EN_t <= out_EN_t;
@@ -515,7 +516,7 @@ always @(posedge axis_clk or negedge axis_rst_n) begin // accumulate result
     Yn <=0 ;
   else if(out_EN_t || mult_EN_2)
     Yn <= 0;
-  else if((cs ==  calculte_1 || cs ==  calculte_2 ) || cs == last_multi || cs == accumulate)
+  else if((cs ==  cal_1 || cs ==  cal_2 ) || cs == last_multi || cs == accumulate)
     Yn <= Yn  +  multi_result;
   else 
     Yn <= Yn;
@@ -529,7 +530,7 @@ always @(posedge axis_clk or negedge axis_rst_n) begin
     out_count <= out_count;
 end
 
-//Out_stream
+//out_stream
 always @(posedge axis_clk or negedge axis_rst_n) begin
   if(~axis_rst_n)
     out_EN_2 <= 0;
@@ -546,7 +547,7 @@ end
 always @(posedge axis_clk or negedge axis_rst_n) begin
   if(~axis_rst_n)
     out_EN_t2 <= 0;
-  else  if((cs ==  calculte_2 ))
+  else  if((cs ==  cal_2 ))
     out_EN_t2 <=  out_EN_2;
   else 
     out_EN_t2 <= out_EN_t2;
@@ -555,13 +556,13 @@ end
 always @(posedge axis_clk or negedge axis_rst_n) begin
   if(~axis_rst_n)
     out_EN_t3 <= 0;
-  else  if((cs ==  calculte_2 ))
+  else  if((cs ==  cal_2 ))
     out_EN_t3 <=  out_EN_t2;
   else 
     out_EN_t3 <= out_EN_t3;
 end
 
-assign sm_tvalid = ((out_EN_t && do_cal) && (cs == calculte_1)) || (cs == out_state); 
+assign sm_tvalid = ((out_EN_t && do_cal) && (cs == cal_1)) || (cs == out_state); 
 assign sm_tdata = Yn;
 
 //ap control
